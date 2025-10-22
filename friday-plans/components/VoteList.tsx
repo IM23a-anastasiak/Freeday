@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useUser } from "@clerk/nextjs";
 import { currentFridayKey } from "@/lib/week";
@@ -15,7 +15,7 @@ export default function VoteList() {
   const [votes, setVotes] = useState<VoteRow[]>([]);
   const [loading, setLoading] = useState(false);
 
-  async function load() {
+  const load = useCallback(async () => {
     const [tRes, vRes] = await Promise.all([
       supabase.from("tasks").select("*").order("created_at", { ascending: false }),
       supabase.from("votes").select("*").eq("week", week)
@@ -26,14 +26,14 @@ export default function VoteList() {
 
     setTasks(tRes.data ?? []);
     setVotes(vRes.data ?? []);
-  }
+  }, [week]);
 
   useEffect(() => {
     load();
     const onChanged = () => load();
     window.addEventListener("votes:changed", onChanged);
     return () => window.removeEventListener("votes:changed", onChanged);
-  }, [week]);
+  }, [load]);
 
   const tally = useMemo(() => {
     const map: Record<string, number> = {};
@@ -68,15 +68,17 @@ export default function VoteList() {
 
   return (
     <div className="space-y-3">
-      {tasks.length === 0 && <div className="opacity-70">No ideas yet — add one first.</div>}
+      {tasks.length === 0 && (
+        <div className="card text-sm text-slate-500">No ideas yet — add one first.</div>
+      )}
       {tasks.map((t) => {
         const count = tally[t.id] || 0;
         const mine = myVoteTaskId === t.id;
         return (
-          <div key={t.id} className="card flex items-center justify-between">
-            <div>
-              <div className="font-medium">{t.title}</div>
-              <div className="text-sm opacity-70">Votes: {count}</div>
+          <div key={t.id} className="card flex items-center justify-between p-4">
+            <div className="space-y-1">
+              <div className="font-medium text-slate-800">{t.title}</div>
+              <div className="text-sm text-slate-500">Votes: {count}</div>
             </div>
             <button className="btn" disabled={loading || mine} onClick={() => vote(t.id)}>
               {mine ? "Your vote" : "Vote"}

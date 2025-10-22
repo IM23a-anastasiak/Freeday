@@ -1,10 +1,25 @@
+import Link from "next/link";
 import { currentUser } from "@clerk/nextjs/server";
 import { redirect } from "next/navigation";
-import { UserButton } from "@clerk/nextjs";
+import AuthUserButton from "@/components/AuthUserButton";
 import TaskForm from "@/components/TaskForm";
 import TaskList from "@/components/TaskList";
 
+export const dynamic = "force-dynamic";
+
 export default async function DashboardPage() {
+  if (!process.env.NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY) {
+    return (
+      <main className="mx-auto max-w-3xl space-y-6 text-sm text-slate-600">
+        <h1 className="text-2xl font-semibold">Authentication not configured</h1>
+        <p>
+          To use the dashboard you need to supply Clerk keys. Set <code>NEXT_PUBLIC_CLERK_PUBLISHABLE_KEY</code> and
+          <code> CLERK_SECRET_KEY</code> in your environment and redeploy.
+        </p>
+      </main>
+    );
+  }
+
   const user = await currentUser();
   if (!user) {
     // Not signed in → send to sign-in (middleware also protects routes)
@@ -12,22 +27,35 @@ export default async function DashboardPage() {
   }
 
   return (
-    <main className="max-w-3xl mx-auto p-6 space-y-6">
-      <header className="flex items-center justify-between">
-        <h1 className="text-2xl font-semibold">Friday Plans</h1>
-        <UserButton afterSignOutUrl="/" />
+    <main className="mx-auto max-w-4xl space-y-10">
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-semibold">Friday plans hub</h1>
+          <p className="mt-1 text-sm text-slate-600">
+            Hello, {user.firstName || "friend"} 👋 – capture ideas, vote together and spin the wheel when it’s time.
+          </p>
+        </div>
+        <div className="flex items-center gap-3">
+          <Link className="btn btn-secondary" href="/vote">
+            Weekly vote
+          </Link>
+          <Link className="btn btn-secondary" href="/wheel">
+            Spin the wheel
+          </Link>
+          <AuthUserButton appearance={{ elements: { userButtonAvatarBox: "ring-2 ring-white" } }} afterSignOutUrl="/" />
+        </div>
       </header>
 
-      <p className="opacity-80">
-        Hello, {user.firstName || "friend"} 👋 — you’re signed in!
-      </p>
-
-      <div className="card space-y-4">
-        <h2 className="text-lg font-semibold mb-3">Add a new idea</h2>
+      <section className="card space-y-6">
+        <div className="space-y-2">
+          <h2 className="text-xl font-semibold">Add a new idea</h2>
+          <p className="text-sm text-slate-600">
+            Keep titles punchy – for example “Bowling + ramen” or “Remote brunch”. You can edit or remove them later.
+          </p>
+        </div>
         <TaskForm />
         <TaskList />
-      </div>
-      
+      </section>
     </main>
   );
 }

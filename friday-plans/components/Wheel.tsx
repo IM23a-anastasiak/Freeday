@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { currentFridayKey } from "@/lib/week";
 
@@ -32,14 +32,14 @@ export default function SpinWheel() {
 
   const week = currentFridayKey();
 
-  async function load() {
+  const load = useCallback(async () => {
     const [tRes, vRes] = await Promise.all([
       supabase.from("tasks").select("id,title").order("created_at", { ascending: false }),
       supabase.from("votes").select("task_id,week").eq("week", week),
     ]);
     if (!tRes.error) setTasks(tRes.data ?? []);
     if (!vRes.error) setVotes(vRes.data ?? []);
-  }
+  }, [week]);
 
   useEffect(() => {
     load();
@@ -51,7 +51,7 @@ export default function SpinWheel() {
       window.removeEventListener("tasks:changed", onTasks);
       window.removeEventListener("votes:changed", onVotes);
     };
-  }, [week]);
+  }, [load]);
 
   const entries = useMemo(() => {
     if (!tasks.length) return [] as { option: string; taskId: string }[];

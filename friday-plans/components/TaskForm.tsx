@@ -3,15 +3,18 @@
 import { useState } from "react";
 import { supabase } from "@/lib/supabase";
 import { useUser } from "@clerk/nextjs";
+import type { UserResource } from "@clerk/types";
 
-function buildDisplayName(user: any) {
-  const firstLast = [user?.firstName, user?.lastName].filter(Boolean).join(" ");
+function buildDisplayName(user: UserResource | null | undefined) {
+  if (!user) return "Anonymous";
+
+  const firstLast = [user.firstName, user.lastName].filter(Boolean).join(" ");
   return (
-    user?.fullName ||
+    user.fullName ||
     (firstLast || undefined) ||
-    user?.username ||
-    user?.primaryEmailAddress?.emailAddress ||
-    `user_${user?.id?.slice(-6) || "anon"}`
+    user.username ||
+    user.primaryEmailAddress?.emailAddress ||
+    `user_${user.id.slice(-6)}`
   );
 }
 
